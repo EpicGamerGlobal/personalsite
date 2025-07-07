@@ -1,4 +1,0 @@
-/* Invert icons to white to make them visible */
-.icon-invert {
-    filter: brightness(0) invert(1);
-}
