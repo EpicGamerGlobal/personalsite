@@ -2,10 +2,9 @@ let canvas;
 let ctx;
 let particles = [];
 let amount = 0;
-let mouse = {x:0,y:0};
+let mouse = { x: 0, y: 0 };
 let radius = 2;
 let timeouts = [];
-const colors = ["#FFFFFF", "#AAAAAA"];
 let ww;
 let wh;
 let loaded = false;
@@ -31,7 +30,7 @@ addEventListener("DOMContentLoaded", () => {
     loaded = true;
 });
 
-function Particle(x,y) {
+function Particle(x, y, color) {
     this.x = Math.random() * ww;
     this.y = Math.random() * wh;
     this.dest = { x, y };
@@ -41,10 +40,10 @@ function Particle(x,y) {
     this.accX = 0;
     this.accY = 0;
     this.friction = Math.random() * 0.01 + 0.94;
-    this.color = colors[Math.floor(Math.random() * colors.length)];
+    this.color = color;
 }
 
-Particle.prototype.render = function() {
+Particle.prototype.render = function () {
     this.accX = (this.dest.x - this.x) / 100;
     this.accY = (this.dest.y - this.y) / 100;
     this.vx += this.accX;
@@ -96,42 +95,54 @@ function initScene() {
     img.crossOrigin = "Anonymous";
     img.src = 'images/logo.jpg';
 
-    img.onload = function() {
+    img.onload = function () {
         console.log("✅ Image loaded!");
 
-        ctx.drawImage(img, ww / 2 - 128, wh / 2 - 128, 256, 256);
-        let data = ctx.getImageData(0, 0, ww, wh).data;
+        // Limit size to max 600px
+        const size = Math.min(ww, wh, 600);
+        ctx.drawImage(img, ww / 2 - size / 2, wh / 2 - size / 2, size, size);
+
+        let imageData = ctx.getImageData(0, 0, ww, wh);
+        let data = imageData.data;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.globalCompositeOperation = "screen";
 
         particles = [];
 
-        for (let i = 0; i < ww; i += 12) {
-            for (let j = 0; j < wh; j += 12) {
-                if (data[((i + j * ww) * 4) + 3] > 150) {
-                    particles.push(new Particle(i, j));
+        // Sample every 4 pixels for performance
+        for (let i = 0; i < ww; i += 4) {
+            for (let j = 0; j < wh; j += 4) {
+                let index = ((i + j * ww) * 4);
+                let alpha = data[index + 3];
+
+                if (alpha > 50) {
+                    let r = data[index];
+                    let g = data[index + 1];
+                    let b = data[index + 2];
+                    let color = `rgb(${r},${g},${b})`;
+
+                    particles.push(new Particle(i, j, color));
                 }
             }
         }
 
         amount = particles.length;
-
         console.log(`✅ Particles created: ${amount}`);
 
-        // TEST: If none found, create 10 random particles to verify rendering
         if (amount === 0) {
             console.log("⚠️ No particles from image, adding test particles...");
             for (let i = 0; i < 10; i++) {
-                particles.push(new Particle(Math.random() * ww, Math.random() * wh));
+                particles.push(new Particle(Math.random() * ww, Math.random() * wh, "rgb(255,0,0)"));
             }
             amount = particles.length;
         }
     };
 
-    img.onerror = function() {
+    img.onerror = function () {
         console.error("❌ Failed to load image!");
     };
 }
+
 
 
 function onMouseClick() {
